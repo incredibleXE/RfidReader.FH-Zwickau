@@ -2,6 +2,8 @@ package uhfReader;
 
 import java.util.List;
 
+import model.Databean;
+
 import com.metratec.lib.connection.CommConnectionException;
 import com.metratec.lib.rfidreader.RFIDReaderException;
 import com.metratec.lib.rfidreader.UHFReader;
@@ -14,13 +16,14 @@ import com.metratec.lib.rfidreader.UHFReader;
 public class UhfReaderThread implements Runnable
 {
 	private UHFReader reader = null;
-	
+	private Databean databean = null;
 	/**
 	 * Constructor
 	 * @param reader verbundener UHFReader 
 	 */
-	public UhfReaderThread(UHFReader reader) {
+	public UhfReaderThread(UHFReader reader, Databean databean) {
 		this.reader = reader;
+		this.databean = databean;
 	}
 	
 	/**
@@ -36,14 +39,14 @@ public class UhfReaderThread implements Runnable
 			printInventory(reader);
 
 		} catch (RFIDReaderException | CommConnectionException e) {
-			System.out.println(e.getClass().getSimpleName() + ": "
+			databean.println(e.getClass().getSimpleName() + ": "
 					+ e.getMessage());
 		} finally {
 			// Disconnect connected reader
 			try {
 				reader.disconnect();
 			} catch (CommConnectionException e) {
-				System.out.println("Error disconnect reader - "
+				databean.println("Error disconnect reader - "
 						+ e.getClass().getSimpleName() + ": " + e.getMessage());
 			}
 		}		
@@ -56,13 +59,13 @@ public class UhfReaderThread implements Runnable
 	 * @throws CommConnectionException
 	 */
 	private void printInventory(UHFReader reader) throws RFIDReaderException, CommConnectionException {
-		System.out.println("Search for uhf tags with reader "+reader.getSerialNumber()+":");
+		databean.println("Search for uhf tags with reader "+reader.getSerialNumber()+":");
 		List<String> inventory = reader.getInventory();
 		while (inventory.isEmpty()) {
 			inventory = reader.getInventory();
 		}
 		for (String tagEPC : inventory) {
-			System.out.println("\tFound Tag with EPC " + tagEPC);
+			databean.println("\tFound Tag with EPC " + tagEPC);
 		}
 	}
 }

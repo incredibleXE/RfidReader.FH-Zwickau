@@ -1,9 +1,11 @@
 package uhfReader;
 
+import exceptions.NoReaderFoundException;
 import gnu.io.SerialPort;
 
 import java.util.ArrayList;
 
+import model.Databean;
 import jd2xx.JD2XX.DeviceInfo;
 
 import com.metratec.lib.connection.CommConnectionException;
@@ -19,12 +21,12 @@ import com.metratec.lib.rfidreader.UHFReader.READER_MODE;
  *
  */
 public class IniUhfReader {
-	
+	private Databean databean = null;
 	/**
 	 * constructor
 	 */
-	public IniUhfReader() {
-		
+	public IniUhfReader(Databean databean) {
+		this.databean = databean;
 	}
 	
 	/**
@@ -35,24 +37,25 @@ public class IniUhfReader {
 	 * Für jeden gefundene UHFReader wird ein Objekt @see UhfReaderThread.class innerhalb eines eigenen Threads 
 	 * erstellt. Danach wird der Thread gestartet.
 	 */
-	public void initReader() {
-		System.out.println("init start");
-		System.out.println("Check USB");
+	public void initReader() throws NoReaderFoundException {
+		databean.println("init start");
+		databean.println("Check USB");
 		ArrayList<UHFReader> readerList = getConnectedUSBUHFReader();
 		if (readerList.isEmpty()) {
-			System.out.println("Check Serial");
+			databean.println("Check Serial");
 			readerList = getConnectedSerialUHFReader();
 			if (readerList.isEmpty()) {
-				System.out.println("No reader found. Program stopped");
-				return;
+				throw new NoReaderFoundException();
 			}
 		}
 		
 		for(UHFReader reader : readerList) {
-			new Thread(new UhfReaderThread(reader)).start();
+			Thread thread = new Thread(new UhfReaderThread(reader,databean));
+			databean.addThread(thread);
+			thread.start();
 		}
 		
-		System.out.println("init finished");
+		databean.println("init finished");
 	}
 
 	/**
@@ -64,19 +67,19 @@ public class IniUhfReader {
 	private ArrayList<UHFReader> getConnectedUSBUHFReader() {
 		ArrayList<UHFReader> uhfReaderList = new ArrayList<UHFReader>();
 		try {
-			System.out.println("\tSearch for connected usb uhf reader devices");
+			databean.println("\tSearch for connected usb uhf reader devices");
 			for (DeviceInfo info : USBConnection.getUSBDevices()) {
-				System.out.println("\tCheck " + info.serial + " "
+				databean.println("\tCheck " + info.serial + " "
 						+ info.description);
 				UHFReader reader = new UHFReader(new USBConnection(info),
 						READER_MODE.ETS);
 				try {
 					reader.connect();
-					System.out.println("\tUsing " + info.serial + " "
+					databean.println("\tUsing " + info.serial + " "
 							+ info.description);
 					uhfReaderList.add(reader);
 				} catch (Exception e) {
-					System.out.println("\tSkip usb device " + info.description
+					databean.println("\tSkip usb device " + info.description
 							+ ": " + e.getClass().getSimpleName() + " "
 							+ e.getMessage());
 					try {
@@ -87,7 +90,7 @@ public class IniUhfReader {
 			}
 			return uhfReaderList;
 		} catch (CommConnectionException e) {
-			System.out.println("\tUSB Error " + e.getErrorDescription());
+			databean.println("\tUSB Error " + e.getErrorDescription());
 		}
 		return null;
 	}
@@ -101,19 +104,19 @@ public class IniUhfReader {
 	private ArrayList<UHFReader> getConnectedSerialUHFReader() {
 		ArrayList<UHFReader> uhfReaderList = new ArrayList<UHFReader>();
 		try {
-			System.out.println("\tSearch for connected usb uhf reader devices");
+			databean.println("\tSearch for connected usb uhf reader devices");
 			for (String port : RS232Connection.getSerialPorts()) {
-				System.out.println("\tCheck " + port);
+				databean.println("\tCheck " + port);
 				UHFReader reader = new UHFReader(new RS232Connection(port,
 						115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
 						SerialPort.PARITY_NONE, SerialPort.FLOWCONTROL_NONE),
 						READER_MODE.ETS);
 				try {
 					reader.connect();
-					System.out.println("\tUsing " + port);
+					databean.println("\tUsing " + port);
 					uhfReaderList.add(reader);
 				} catch (Exception e) {
-					System.out.println("\tSkip serial device " + port + ": "
+					databean.println("\tSkip serial device " + port + ": "
 							+ e.getClass().getSimpleName() + " "
 							+ e.getMessage());
 					try {
@@ -124,7 +127,7 @@ public class IniUhfReader {
 			}
 			return uhfReaderList;
 		} catch (CommConnectionException e) {
-			System.out.println("\tUSB Error " + e.getErrorDescription());
+			databean.println("\tUSB Error " + e.getErrorDescription());
 		}
 		return null;
 	}
