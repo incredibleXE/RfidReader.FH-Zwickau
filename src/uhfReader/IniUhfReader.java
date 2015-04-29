@@ -41,10 +41,12 @@ public class IniUhfReader {
 		databean.println("init start");
 		databean.println("Check USB");
 		ArrayList<UHFReader> readerList = getConnectedUSBUHFReader();
-		if (readerList.isEmpty()) {
+		if ((readerList==null)||
+			(readerList.isEmpty())) {
 			databean.println("Check Serial");
 			readerList = getConnectedSerialUHFReader();
-			if (readerList.isEmpty()) {
+			if ((readerList==null)||
+				(readerList.isEmpty())) {
 				throw new NoReaderFoundException();
 			}
 		}
